@@ -3,12 +3,12 @@ import { useState } from "react";
 export default function Form({ onAdd }) {
     const [title, setTitle] = useState("");
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
 
-        if (title.trim() === "") return
+        if (!title.trim()) return
 
-        onAdd(title)
+        await onAdd(title)
 
         setTitle("")
     }

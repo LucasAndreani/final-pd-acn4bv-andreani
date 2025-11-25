@@ -1,17 +1,31 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import List from "./components/List";
 import Form from "./components/Form";
 
 function App() {
     const [tasks, setTasks] = useState([]);
 
+    useEffect(() => {
+        fetch("http://localhost:3000/tasks")
+        .then(res => res.json())
+        .then(data => setTasks(data))
+        .catch(err => console.error("Error al cargar tasks", err))
+    }, [])
 
-    const addTask = (title) => {
-        const newTask = {
-            id: crypto.randomUUID(),
-            title
-        }
-        setTasks([...tasks, newTask])
+
+    const addTask = async (title) => {
+        const response = await fetch("http://localhost:3000/tasks", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ title })
+        });
+
+        const newTask = await response.json()
+
+        setTasks(prev => [...prev, newTask]);
+
     }
 
 
