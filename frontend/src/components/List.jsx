@@ -10,6 +10,7 @@ function List({
     saveEdit,
     cancelEdit
 }) {
+    // Guarda los cambios al editar
     const handleSave = () => {
         if (!editingText.trim()) {
             return;

@@ -9,6 +9,7 @@ function App() {
     const [editingText, setEditingText] = useState("");
     const [message, setMessage] = useState({ type: "", text: "" });
 
+    // Carga las tareas al montar el componente
     useEffect(() => {
         const loadTasks = async () => {
             try {
@@ -24,11 +25,13 @@ function App() {
         loadTasks();
     }, []);
 
+    // Muestra un mensaje temporal al usuario
     const showMessage = (type, text) => {
         setMessage({ type, text });
         setTimeout(() => setMessage({ type: "", text: "" }), 3000);
     };
 
+    // Agrega una nueva tarea
     const addTask = async (title) => {
         try {
             const response = await fetch("http://localhost:3000/tasks", {
@@ -53,6 +56,7 @@ function App() {
         }
     };
 
+    // Elimina una tarea
     const deleteTask = async (id) => {
         try {
             const response = await fetch(`http://localhost:3000/tasks/${id}`, {
@@ -72,11 +76,13 @@ function App() {
         }
     };
 
+    // Activa el modo edicion para una tarea
     const startEditing = (task) => {
         setEditingId(task.id);
         setEditingText(task.title);
     };
 
+    // Guarda los cambios de una tarea editada
     const saveEdit = async () => {
         try {
             const res = await fetch(`http://localhost:3000/tasks/${editingId}`, {
@@ -103,6 +109,7 @@ function App() {
         }
     };
 
+    // Cancela el modo edicion
     const cancelEdit = () => {
         setEditingId(null);
         setEditingText("");

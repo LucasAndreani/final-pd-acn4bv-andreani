@@ -5,6 +5,7 @@ export default function Form({ onAdd }) {
     const [title, setTitle] = useState("");
     const [error, setError] = useState("");
 
+    // Valida el titulo de la tarea
     const validateTitle = (value) => {
         if (!value.trim()) {
             return "El título no puede estar vacío";
@@ -18,6 +19,7 @@ export default function Form({ onAdd }) {
         return "";
     };
 
+    // Maneja el envio del formulario
     const handleSubmit = async (e) => {
         e.preventDefault();
 
@@ -32,6 +34,7 @@ export default function Form({ onAdd }) {
         setTitle("");
     };
 
+    // Maneja los cambios en el input
     const handleChange = (e) => {
         const value = e.target.value;
         setTitle(value);
