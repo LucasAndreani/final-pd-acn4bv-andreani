@@ -49,7 +49,7 @@ export default function Form({ onAdd }) {
                 <InputGroup>
                     <BootstrapForm.Control
                         type="text"
-                        placeholder="Escribe una nueva tarea..."
+                        placeholder="Escribir una nueva tarea..."
                         value={title}
                         onChange={handleChange}
                         isInvalid={!!error}

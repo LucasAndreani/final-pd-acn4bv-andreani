@@ -1,9 +1,9 @@
 import express from "express";
 import db from "../db.js";
+import { authMiddleware } from "../middlewares/authMiddleware.js";
 
 const router = express.Router();
 
-// Valida que el campo title este presente y no vacio
 function validateTask(req, res, next) {
   if (!req.body.title || req.body.title.trim() === "") {
     return res.status(400).json({ error: "El campo 'title' es obligatorio" });
@@ -11,25 +11,29 @@ function validateTask(req, res, next) {
   next();
 }
 
-// Obtiene todas las tareas
-router.get("/", (req, res) => {
+router.get("/", authMiddleware, (req, res) => {
   try {
-    const rows = db.prepare("SELECT id, title FROM tasks ORDER BY id DESC").all();
+    const rows = db
+      .prepare(
+        "SELECT id, title FROM tasks WHERE user_id = ? ORDER BY id DESC"
+      )
+      .all(req.user.id);
+
     res.json(rows);
   } catch (err) {
-    console.error("Error al obtener tareas", err);
     res.status(500).json({ error: "Error interno del servidor" });
   }
 });
 
-// Obtiene una tarea por id
-router.get("/:id", (req, res) => {
+router.get("/:id", authMiddleware, (req, res) => {
   const id = Number(req.params.id);
 
   try {
     const task = db
-      .prepare("SELECT id, title FROM tasks WHERE id = ?")
-      .get(id);
+      .prepare(
+        "SELECT id, title FROM tasks WHERE id = ? AND user_id = ?"
+      )
+      .get(id, req.user.id);
 
     if (!task) {
       return res.status(404).json({ error: "Task no encontrada" });
@@ -37,78 +41,76 @@ router.get("/:id", (req, res) => {
 
     res.json(task);
   } catch (err) {
-    console.error("Error al obtener tarea", err);
     res.status(500).json({ error: "Error interno del servidor" });
   }
 });
 
-// Crea una nueva tarea
-router.post("/", validateTask, (req, res) => {
+router.post("/", authMiddleware, validateTask, (req, res) => {
   try {
     const title = req.body.title.trim();
 
     const result = db
-      .prepare("INSERT INTO tasks (title) VALUES (?)")
-      .run(title);
+      .prepare(
+        "INSERT INTO tasks (title, user_id) VALUES (?, ?)"
+      )
+      .run(title, req.user.id);
 
-    const newTask = { id: result.lastInsertRowid, title };
-
-    res.status(201).json(newTask);
+    res.status(201).json({
+      id: result.lastInsertRowid,
+      title
+    });
   } catch (err) {
-    console.error("Error al crear tarea", err);
     res.status(500).json({ error: "Error interno del servidor" });
   }
 });
 
-// Actualiza una tarea existente
-router.put("/:id", validateTask, (req, res) => {
+router.put("/:id", authMiddleware, validateTask, (req, res) => {
   const id = Number(req.params.id);
   const title = req.body.title.trim();
 
   try {
     const exists = db
-      .prepare("SELECT id FROM tasks WHERE id = ?")
-      .get(id);
+      .prepare(
+        "SELECT id FROM tasks WHERE id = ? AND user_id = ?"
+      )
+      .get(id, req.user.id);
 
     if (!exists) {
       return res.status(404).json({ error: "Task no encontrada" });
     }
 
-    db.prepare("UPDATE tasks SET title = ? WHERE id = ?").run(title, id);
+    db.prepare(
+      "UPDATE tasks SET title = ? WHERE id = ? AND user_id = ?"
+    ).run(title, id, req.user.id);
 
-    const updated = db
-      .prepare("SELECT id, title FROM tasks WHERE id = ?")
-      .get(id);
-
-    res.json(updated);
+    res.json({ id, title });
   } catch (err) {
-    console.error("Error al actualizar tarea", err);
     res.status(500).json({ error: "Error interno del servidor" });
   }
 });
 
-// Elimina una tarea
-router.delete("/:id", (req, res) => {
+router.delete("/:id", authMiddleware, (req, res) => {
   const id = Number(req.params.id);
 
   try {
     const exists = db
-      .prepare("SELECT id FROM tasks WHERE id = ?")
-      .get(id);
+      .prepare(
+        "SELECT id FROM tasks WHERE id = ? AND user_id = ?"
+      )
+      .get(id, req.user.id);
 
     if (!exists) {
       return res.status(404).json({ error: "Task no encontrada" });
     }
 
-    db.prepare("DELETE FROM tasks WHERE id = ?").run(id);
+    db.prepare(
+      "DELETE FROM tasks WHERE id = ? AND user_id = ?"
+    ).run(id, req.user.id);
 
     res.json({ message: "Task eliminada correctamente" });
   } catch (err) {
-    console.error("Error al eliminar tarea", err);
     res.status(500).json({ error: "Error interno del servidor" });
   }
 });
 
 export default router;
-
-

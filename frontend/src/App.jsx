@@ -1,11 +1,19 @@
 import { useState, useEffect } from "react";
-import { Container, Alert, Nav } from "react-bootstrap";
-import { Routes, Route, Link, useParams } from "react-router-dom";
-import List from "./components/List";
-import Form from "./components/Form";
+import { Container, Alert, Nav, Button } from "react-bootstrap";
+import { Form as BootstrapForm } from "react-bootstrap";
+import {
+    Routes,
+    Route,
+    Link,
+    useParams,
+    useNavigate,
+    Navigate
+} from "react-router-dom";
 
-// Pagina de detalle de una tarea
-function TaskDetailPage() {
+import List from "./components/List";
+import TaskForm from "./components/Form";
+
+function TaskDetailPage({ token }) {
     const { id } = useParams();
     const [task, setTask] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -14,46 +22,36 @@ function TaskDetailPage() {
     useEffect(() => {
         const loadTask = async () => {
             try {
-                const res = await fetch(`http://localhost:3000/tasks/${id}`);
-                if (!res.ok) {
-                    const errData = await res.json();
-                    throw new Error(errData.error || "Error al cargar tarea");
-                }
+                const res = await fetch(`http://localhost:3000/tasks/${id}`, {
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
+                });
+                if (!res.ok) throw new Error("Error al cargar tarea");
                 const data = await res.json();
                 setTask(data);
             } catch (err) {
-                console.error("Error al cargar tarea:", err);
-                setError(err.message || "Error al cargar tarea");
+                setError(err.message);
             } finally {
                 setLoading(false);
             }
         };
-
         loadTask();
-    }, [id]);
+    }, [id, token]);
 
-    if (loading) {
-        return <p>Cargando tarea...</p>;
-    }
-
-    if (error) {
-        return <Alert variant="danger">{error}</Alert>;
-    }
-
-    if (!task) {
-        return <p>No se encontro la tarea.</p>;
-    }
+    if (loading) return <p>Cargando tarea...</p>;
+    if (error) return <Alert variant="danger">{error}</Alert>;
+    if (!task) return <p>No se encontró la tarea.</p>;
 
     return (
-        <div>
-            <h2 className="mb-3">Detalle de tarea</h2>
+        <>
+            <h2>Detalle de tarea</h2>
             <p><strong>ID:</strong> {task.id}</p>
-            <p><strong>Titulo:</strong> {task.title}</p>
-        </div>
+            <p><strong>Título:</strong> {task.title}</p>
+        </>
     );
 }
 
-// Pagina principal con la lista de tareas
 function TasksPage({
     tasks,
     message,
@@ -69,22 +67,19 @@ function TasksPage({
     return (
         <div className="card border">
             <div className="card-body p-4">
-                <h1 className="mb-4 text-center">
-                    Gestor de Tareas
-                </h1>
+                <h1 className="text-center mb-4">Gestor de Tareas</h1>
 
                 {message.text && (
                     <Alert
                         variant={message.type}
                         dismissible
-                        onClose={() => message.onClose && message.onClose()}
-                        className="mb-4"
+                        onClose={message.onClose}
                     >
                         {message.text}
                     </Alert>
                 )}
 
-                <Form onAdd={addTask} />
+                <TaskForm onAdd={addTask} />
 
                 <List
                     tasks={tasks}
@@ -101,113 +96,235 @@ function TasksPage({
     );
 }
 
+function LoginPage({ onLogin, isLoading }) {
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+    const [error, setError] = useState("");
+    const navigate = useNavigate();
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        const ok = await onLogin(email, password, setError);
+        if (ok) navigate("/");
+    };
+
+    return (
+        <div className="card border">
+            <div className="card-body p-4">
+                <h2 className="text-center mb-3">Iniciar sesión</h2>
+
+                {error && <Alert variant="danger">{error}</Alert>}
+
+                <BootstrapForm onSubmit={handleSubmit}>
+                    <BootstrapForm.Group className="mb-3">
+                        <BootstrapForm.Label>Email</BootstrapForm.Label>
+                        <BootstrapForm.Control
+                            type="email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            required
+                        />
+                    </BootstrapForm.Group>
+
+                    <BootstrapForm.Group className="mb-3">
+                        <BootstrapForm.Label>Password</BootstrapForm.Label>
+                        <BootstrapForm.Control
+                            type="password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            required
+                        />
+                    </BootstrapForm.Group>
+
+                    <Button type="submit" disabled={isLoading}>
+                        {isLoading ? "Cargando..." : "Entrar"}
+                    </Button>
+                </BootstrapForm>
+            </div>
+        </div>
+    );
+}
+
+function RegisterPage({ onRegister, isLoading }) {
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+    const [error, setError] = useState("");
+    const navigate = useNavigate();
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        const ok = await onRegister(email, password, setError);
+        if (ok) navigate("/");
+    };
+
+    return (
+        <div className="card border">
+            <div className="card-body p-4">
+                <h2 className="text-center mb-3">Crear cuenta</h2>
+
+                {error && <Alert variant="danger">{error}</Alert>}
+
+                <BootstrapForm onSubmit={handleSubmit}>
+                    <BootstrapForm.Group className="mb-3">
+                        <BootstrapForm.Label>Email</BootstrapForm.Label>
+                        <BootstrapForm.Control
+                            type="email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            required
+                        />
+                    </BootstrapForm.Group>
+
+                    <BootstrapForm.Group className="mb-3">
+                        <BootstrapForm.Label>Password</BootstrapForm.Label>
+                        <BootstrapForm.Control
+                            type="password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            required
+                        />
+                    </BootstrapForm.Group>
+
+                    <Button type="submit" disabled={isLoading}>
+                        {isLoading ? "Cargando..." : "Registrarme"}
+                    </Button>
+                </BootstrapForm>
+            </div>
+        </div>
+    );
+}
+
 function App() {
     const [tasks, setTasks] = useState([]);
     const [editingId, setEditingId] = useState(null);
     const [editingText, setEditingText] = useState("");
     const [message, setMessage] = useState({ type: "", text: "" });
+    const [token, setToken] = useState(localStorage.getItem("token") || "");
+    const [userEmail, setUserEmail] = useState(localStorage.getItem("email") || "");
+    const [authLoading, setAuthLoading] = useState(false);
 
-    // Carga las tareas al montar el componente
-    useEffect(() => {
-        const loadTasks = async () => {
-            try {
-                const res = await fetch("http://localhost:3000/tasks");
-                if (!res.ok) throw new Error("Error al cargar tareas");
-                const data = await res.json();
-                setTasks(data);
-            } catch (err) {
-                console.error("Error al cargar tasks", err);
-                showMessage("danger", "Error al cargar las tareas");
-            }
-        };
-        loadTasks();
-    }, []);
+    const authHeaders = () =>
+        token ? { Authorization: `Bearer ${token}` } : {};
 
-    // Muestra un mensaje temporal al usuario
     const showMessage = (type, text) => {
-        setMessage({ type, text, onClose: () => setMessage({ type: "", text: "" }) });
-        setTimeout(() => setMessage({ type: "", text: "" }), 3000);
+        setMessage({
+            type,
+            text,
+            onClose: () => setMessage({ type: "", text: "" })
+        });
     };
 
-    // Agrega una nueva tarea
-    const addTask = async (title) => {
+    useEffect(() => {
+        if (!token) {
+            setTasks([]);
+            return;
+        }
+
+        fetch("http://localhost:3000/tasks", {
+            headers: authHeaders()
+        })
+            .then((res) => res.json())
+            .then(setTasks)
+            .catch(() => showMessage("danger", "Error al cargar tareas"));
+    }, [token]);
+
+    const saveSession = (t, email) => {
+        setToken(t);
+        setUserEmail(email);
+        localStorage.setItem("token", t);
+        localStorage.setItem("email", email);
+    };
+
+    const clearSession = () => {
+        setToken("");
+        setUserEmail("");
+        localStorage.removeItem("token");
+        localStorage.removeItem("email");
+    };
+
+    const login = async (email, password, setError) => {
+        setAuthLoading(true);
         try {
-            const response = await fetch("http://localhost:3000/tasks", {
+            const res = await fetch("http://localhost:3000/auth/login", {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({ title })
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email, password })
             });
-
-            if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.error || "Error al agregar tarea");
-            }
-
-            const newTask = await response.json();
-            setTasks(prev => [...prev, newTask]);
-            showMessage("success", "Tarea agregada correctamente");
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error);
+            saveSession(data.token, data.email);
+            return true;
         } catch (err) {
-            console.error("Error al agregar tarea:", err);
-            showMessage("danger", err.message || "Error al agregar la tarea");
+            setError(err.message);
+            return false;
+        } finally {
+            setAuthLoading(false);
         }
     };
 
-    // Elimina una tarea
-    const deleteTask = async (id) => {
+    const register = async (email, password, setError) => {
+        setAuthLoading(true);
         try {
-            const response = await fetch(`http://localhost:3000/tasks/${id}`, {
-                method: "DELETE"
+            const res = await fetch("http://localhost:3000/auth/register", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email, password })
             });
-
-            if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.error || "Error al eliminar tarea");
-            }
-
-            setTasks(tasks.filter(t => t.id !== id));
-            showMessage("success", "Tarea eliminada correctamente");
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error);
+            saveSession(data.token, data.email);
+            return true;
         } catch (err) {
-            console.error("Error al eliminar tarea:", err);
-            showMessage("danger", err.message || "Error al eliminar la tarea");
+            setError(err.message);
+            return false;
+        } finally {
+            setAuthLoading(false);
         }
     };
 
-    // Activa el modo edicion para una tarea
+    const addTask = async (title) => {
+        const res = await fetch("http://localhost:3000/tasks", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                ...authHeaders()
+            },
+            body: JSON.stringify({ title })
+        });
+        const data = await res.json();
+        setTasks((prev) => [...prev, data]);
+    };
+
+    const deleteTask = async (id) => {
+        await fetch(`http://localhost:3000/tasks/${id}`, {
+            method: "DELETE",
+            headers: authHeaders()
+        });
+        setTasks((prev) => prev.filter((t) => t.id !== id));
+    };
+
     const startEditing = (task) => {
         setEditingId(task.id);
         setEditingText(task.title);
     };
 
-    // Guarda los cambios de una tarea editada
     const saveEdit = async () => {
-        try {
-            const res = await fetch(`http://localhost:3000/tasks/${editingId}`, {
-                method: "PUT",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({ title: editingText })
-            });
-
-            if (!res.ok) {
-                const error = await res.json();
-                throw new Error(error.error || "Error al editar tarea");
-            }
-
-            const updated = await res.json();
-            setTasks(tasks.map(t => (t.id === editingId ? updated : t)));
-            setEditingId(null);
-            setEditingText("");
-            showMessage("success", "Tarea actualizada correctamente");
-        } catch (err) {
-            console.error("Error al editar:", err);
-            showMessage("danger", err.message || "Error al editar la tarea");
-        }
+        const res = await fetch(`http://localhost:3000/tasks/${editingId}`, {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json",
+                ...authHeaders()
+            },
+            body: JSON.stringify({ title: editingText })
+        });
+        const updated = await res.json();
+        setTasks((prev) =>
+            prev.map((t) => (t.id === editingId ? updated : t))
+        );
+        setEditingId(null);
+        setEditingText("");
     };
 
-    // Cancela el modo edicion
     const cancelEdit = () => {
         setEditingId(null);
         setEditingText("");
@@ -216,30 +333,60 @@ function App() {
     return (
         <Container className="my-5">
             <Nav className="mb-4 gap-3">
-                <Nav.Item>
-                    <Nav.Link as={Link} to="/">Lista de tareas</Nav.Link>
-                </Nav.Item>
+                {token && <Nav.Link as={Link} to="/">Tareas</Nav.Link>}
+                {!token && (
+                    <>
+                        <Nav.Link as={Link} to="/login">Login</Nav.Link>
+                        <Nav.Link as={Link} to="/register">Registro</Nav.Link>
+                    </>
+                )}
+                {token && (
+                    <Nav.Link onClick={clearSession}>
+                        Cerrar sesión ({userEmail})
+                    </Nav.Link>
+                )}
             </Nav>
 
             <Routes>
                 <Route
                     path="/"
                     element={
-                        <TasksPage
-                            tasks={tasks}
-                            message={message}
-                            addTask={addTask}
-                            deleteTask={deleteTask}
-                            startEditing={startEditing}
-                            editingId={editingId}
-                            editingText={editingText}
-                            setEditingText={setEditingText}
-                            saveEdit={saveEdit}
-                            cancelEdit={cancelEdit}
-                        />
+                        token ? (
+                            <TasksPage
+                                tasks={tasks}
+                                message={message}
+                                addTask={addTask}
+                                deleteTask={deleteTask}
+                                startEditing={startEditing}
+                                editingId={editingId}
+                                editingText={editingText}
+                                setEditingText={setEditingText}
+                                saveEdit={saveEdit}
+                                cancelEdit={cancelEdit}
+                            />
+                        ) : (
+                            <Navigate to="/login" />
+                        )
                     }
                 />
-                <Route path="/tasks/:id" element={<TaskDetailPage />} />
+                <Route
+                    path="/tasks/:id"
+                    element={
+                        token ? <TaskDetailPage token={token} /> : <Navigate to="/login" />
+                    }
+                />
+                <Route
+                    path="/login"
+                    element={
+                        token ? <Navigate to="/" /> : <LoginPage onLogin={login} isLoading={authLoading} />
+                    }
+                />
+                <Route
+                    path="/register"
+                    element={
+                        token ? <Navigate to="/" /> : <RegisterPage onRegister={register} isLoading={authLoading} />
+                    }
+                />
             </Routes>
         </Container>
     );
